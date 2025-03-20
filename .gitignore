@@ -1,2 +1,31 @@
+# Virtual environments
 backend/venv
+venv/
+env/
+ENV/
+
+# Environment files
 backend/.env
+.env
+.env.*
+
+# Python cache files
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.so
+*.egg
+*.egg-info/
+dist/
+build/

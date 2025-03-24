@@ -1,9 +1,11 @@
 import os
+import logging
 
 from record_creator import RecordCreator
 from dotenv import load_dotenv
 from parase_agent import ParseAgent
 from geoalchemy2.elements import WKTElement
+from typing import Optional
 
 load_dotenv()
 
@@ -67,7 +69,7 @@ class MessageHandler:
         self.record_creator = record_creator
         self.db_session = db_session
 
-    def process_message(self, message_text):
+    def process_message(self, message_text) -> Optional[dict]:
         location_data = self.record_creator.create_address(message_text)
 
         if (
@@ -97,9 +99,14 @@ class MessageHandler:
                 geom=point,
             )
 
-            self.db_session.add(location)
-            self.db_session.commit()
+            try:
+                self.db_session.add(location)
+                self.db_session.commit()
+                location_data["id"] = location.id
+                return location_data
+            except Exception as e:  
+                self.db_session.rollback()
+                logging.error(f"Error: {e}")
+                return None
 
-            location_data["id"] = location.id
-
-        return location_data
+        

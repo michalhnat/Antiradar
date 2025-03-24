@@ -1,6 +1,7 @@
 from parase_agent import ParseAgent
 from geopy.geocoders import Nominatim
 from typing import Dict, Optional
+import logging
 
 
 class RecordCreator:
@@ -9,9 +10,13 @@ class RecordCreator:
         self.geolocator = Nominatim(user_agent="Antiradar")
         self.general_location = general_location
 
-    def _parse_msg(self, message: str) -> Dict:
-        parsed = self.agent.parse_message(message)
-        return parsed
+    def _parse_msg(self, message: str) -> Optional[Dict]:
+        try:
+            parsed = self.agent.parse_message(message)
+            return parsed
+        except Exception as e:
+            logging.error(f"Error parsing message: {e}")
+            return None
 
     def _geocode(self, town: str, street: str) -> Optional[object]:
         try:
@@ -30,26 +35,30 @@ class RecordCreator:
             print(f"Error geocoding address: {e}")
             return None
 
-    def create_address(self, message: str) -> Dict:
-        location = self._parse_msg(message)
-        town = location.get("town", "")
-        street = location.get("street", "")
+    def create_address(self, message: str) -> Optional[Dict]:
+        try: 
+            location = self._parse_msg(message)
+            town = location.get("town", "")
+            street = location.get("street", "")
 
-        coordinates = self._geocode(town, street)
+            coordinates = self._geocode(town, street)
 
-        result = {
-            "town": town,
-            "street": street,
-            "latitude": None,
-            "longitude": None,
-        }
+            result = {
+                "town": town,
+                "street": street,
+                "latitude": None,
+                "longitude": None,
+            }
 
-        if coordinates:
-            result.update(
-                {
-                    "latitude": coordinates.latitude,
-                    "longitude": coordinates.longitude,
-                }
-            )
+            if coordinates:
+                result.update(
+                    {
+                        "latitude": coordinates.latitude,
+                        "longitude": coordinates.longitude,
+                    }
+                )
 
-        return result
+            return result
+        except Exception as e:
+            logging.error(f"Error creating address: {e}")
+            return None

@@ -1,6 +1,7 @@
 from openai import OpenAI
 import json
-from typing import Dict
+import logging
+from typing import Dict, Optional
 
 
 class ParseAgent:
@@ -22,7 +23,7 @@ class ParseAgent:
         self.model = model
         self.system_prompt = system_prompt
 
-    def parse_message(self, message: str, temperature: float = 0.1) -> Dict:
+    def parse_message(self, message: str, temperature: float = 0.1) -> Optional[dict]:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -40,8 +41,8 @@ class ParseAgent:
 
             return parased_reply
         except Exception as e:
-            print(f"error parasing message: {e}")
-            return {"error": str(e), "orginal_message": message}
+            logging.error(f"Error: {e}")
+            return None
 
     def update_system_prompt(self, new_prompt: str) -> None:
         self.system_prompt = new_prompt

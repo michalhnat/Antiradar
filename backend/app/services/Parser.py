@@ -4,7 +4,7 @@ import logging
 from typing import Dict, Optional
 
 
-class ParseAgent:
+class Parser:
     def __init__(
         self,
         open_router_api_key: str,
@@ -23,7 +23,9 @@ class ParseAgent:
         self.model = model
         self.system_prompt = system_prompt
 
-    def parse_message(self, message: str, temperature: float = 0.1) -> Optional[dict]:
+    def parse_message(
+        self, message: str, temperature: float = 0.1
+    ) -> Optional[dict]:
         try:
             response = self.client.chat.completions.create(
                 model=self.model,

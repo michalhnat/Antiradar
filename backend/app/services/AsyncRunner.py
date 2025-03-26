@@ -1,15 +1,23 @@
+from email import message
 import os
 import logging
 
-from record_creator import RecordCreator
+import asyncio
+from asyncio import Queue
+from backend.app.services import DatabaseHandler
+from backend.app.services.MessengerClient import MessengerClient
+from backend.app.services.RecordCreator import RecordCreator
 from dotenv import load_dotenv
-from parase_agent import ParseAgent
+from backend.app.services.Parser import Parser
+from backend.app.services.DatabaseHandler import DatabaseHandler
+from backend.app.db.database import get_db
 from geoalchemy2.elements import WKTElement
 from typing import Optional
 
 load_dotenv()
 
 API_KEY = os.environ.get("OPEN_ROUTER_API")
+COOKIES = os.environ.get("COOKIES_PATH")
 
 system_prompt = """You are an AI assistant specializing in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, and streets, while assuming Zielona Góra as the default location unless another town is explicitly stated.
 
@@ -55,58 +63,49 @@ Output:
 """
 general_location = "Zielona Góra, Lubuskie, Poland"
 
-agent = ParseAgent(
+parser = Parser(
     open_router_api_key=API_KEY,
     system_prompt=system_prompt,
     model="google/gemma-3-27b-it:free",
 )
 
-record_creator = RecordCreator(agent, general_location)
+message_queue = Queue()
+
+record_creator = RecordCreator(parser, general_location)
+database_connector = DatabaseHandler(get_db())
+messenger_client = MessengerClient(proccess_queue=message_queue)
 
 
-class MessageHandler:
-    def __init__(self, record_creator, db_session=None):
-        self.record_creator = record_creator
-        self.db_session = db_session
+async def run_listener():
+    bot = await MessengerClient.startSession(COOKIES)
+    if await bot.isLoggedIn():
+        fetch_client_info = await bot.fetchUserInfo(bot.uid)
+        client_info = fetch_client_info[bot.uid]
+        logging.info(f"Logged in as {client_info.name}")
+    try:
+        await bot.listen()
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        await bot.stopSession()
 
-    def process_message(self, message_text) -> Optional[dict]:
-        location_data = self.record_creator.create_address(message_text)
 
-        if (
-            location_data
-            and self.db_session
-            and location_data.get("town")
-            or location_data.get("street")
-        ):
-            from app.db.models import (
-                Location,
-            )
+async def message_handler():
+    while True:
+        message = await message_queue.get()
+        record = record_creator.create_record(message)
+        if record:
+            database_connector.add("locations", record)
+        else:
+            logging.error("Error creating record")
 
-            point = None
-            if location_data.get("latitude") and location_data.get(
-                "longitude"
-            ):
-                point = WKTElement(
-                    f"POINT({location_data['longitude']} {location_data['latitude']})",
-                    srid=4326,
-                )
 
-            location = Location(
-                town=location_data.get("town", ""),
-                street=location_data.get("street", ""),
-                lat=location_data.get("latitude"),
-                long=location_data.get("longitude"),
-                geom=point,
-            )
+async def main():
+    try:
+        asyncio.run(run_listener())
+    except Exception as e:
+        logging.error(f"Error: {e}")
 
-            try:
-                self.db_session.add(location)
-                self.db_session.commit()
-                location_data["id"] = location.id
-                return location_data
-            except Exception as e:  
-                self.db_session.rollback()
-                logging.error(f"Error: {e}")
-                return None
-
-        
+    try:
+        asyncio.run(message_handler())
+    except Exception as e:
+        logging.error(f"Error: {e}")

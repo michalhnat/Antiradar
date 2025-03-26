@@ -4,7 +4,7 @@ from typing import Dict, Optional
 from backend.app.db.models import Location
 from backend.app.services.Parser import Parser
 from geoalchemy2.elements import WKTElement
-from geopy.geocoders import Nominatim
+from geopy.geocoders import Nominatim, Photon
 from backend.app.db.models import Location
 
 
@@ -26,12 +26,14 @@ class RecordCreator:
     def _geocode(self, town: str, street: str) -> Optional[object]:
         try:
             address = (
-                f"{town} {street} {self.general_location}"
+                f"{street} {town} {self.general_location}"
                 if town and street
                 else town or street
             )
             if not address:
                 return None
+
+            logging.info(f"Geocoding address: {address}")
 
             coordinates = self.geolocator.geocode(address)
             logging.info(f"Geocoded address: {coordinates}")

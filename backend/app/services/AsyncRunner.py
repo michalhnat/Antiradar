@@ -19,54 +19,79 @@ load_dotenv()
 API_KEY = os.environ.get("OPEN_ROUTER_API")
 COOKIES = "backend/ufc-facebook.json"
 
-system_prompt = """You are an AI assistant specializing in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, and streets, while assuming Zielona Góra as the default location unless another town is explicitly stated.
+system_prompt = """You are an AI assistant specialized in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, streets, and related geographic indicators. Follow these rules:
 
-Formatting Rules:
-Structure: Extracted locations should be formatted as a JSON object with the following keys:
-- "town": The town or district name.
-- "street": The street name (if available).
+• Extraction:
+  - Identify explicitly mentioned towns and districts.
+  - Use "Zielona Góra" as the default town if no other is specified.
+  - Recognize known city sourunding towns and districts:
+        Towns: Babimost, Czerwieńsk, Kargowa, Nowogród Bobrzański, Sulechów. 
+        Powiat Zielonogórski
 
-Default Location: If no town is specified, assume Zielona Góra.
+        Rural communes: Bojadła, Świdnica, Trzebiechów, Zabór. 
 
-Recognizing Districts: Identify known districts such as Łężyca, Droszków, Gronów, Ochla, Świdnica, Nowogród Bobrzański and format them appropriately.
+        Districts and settlements of Zielona Góra: Barcikowice, Drzonków, Jany, Jarogniewice, Jeleniów, Kiełpin, Krępa, Łężyca, Ługowo, Marzęcin, Nowy Kisielin, Ochla, Przylep, Racula, Stary Kisielin, Sucha, Zatonie, Zawada. 
 
-Contextual Clues: Consider landmarks or directional hints (e.g., "naprzeciwko Pieprzyka," "za nexterio w stronie ZG") to determine the correct location.
+  - Look for additional geographic references like air towns or any location indications in texts mentioning "ZielonaGora" or "ZielonoGórski powiat" and include them as valid towns.
 
-No Extra Elements: Do not add numbers, bullet points, or unnecessary text—just return the formatted JSON object.
+• Street Extraction:
+  - Identify street names if present.
+  - Incorporate contextual clues (e.g., additional descriptors like "Iveco" appended to a street name) into the street value.
+  - Avoid extracting company or brand names as part of the geographic data.
 
-Ignore Irrelevant Messages: If a message lacks meaningful location data, do not return anything.
+• Formatting:
+  - Output must be a JSON object with exactly two keys:
+      • "town": the town or district name (or a valid location extracted, including air towns if applicable).
+      • "street": the street name if available; otherwise, an empty string.
+  - If no meaningful location information is present, return an empty JSON object {}.
+  - Do not include any extra text, numbers, or formatting beyond the JSON object.
 
 Examples:
-Input:
-"Spotkajmy się na ulicy Zjednoczenia."
+- Input: "Spotkajmy się na ulicy Zjednoczenia."  
+  Output: {"town": "Zielona Góra", "street": "Zjednoczenia"}
 
-Output:
-{"town": "Zielona Góra", "street": "Zjednoczenia"}
+- Input: "Droszków ustawili się za dino w stronę Zg"  
+  Output: {"town": "Droszków", "street": "Dino"}
 
-Input:
-"Jestem w Łężycy, blisko Poziomkowej."
+- Input: "Przed iveco susza"  
+  Output: {"town": "Zielona Góra", "street": "Iveco"}
 
-Output:
-{"town": "Łężyca", "street": "Poziomkowa"}
+- Input: "Wjazd do płot stoją."  
+  Output: {"town": "Zielona Góra", "street": "Płoty"}
 
-Input:
-"Przyjeżdżaj do Wilkanowa!"
+- Input: "Wojska Polskiego NBP"  
+  Output: {"town": "Zielona Góra", "street": "Wojska Polskiego NBP"}
 
-Output:
-{"town": "Wilkanowo", "street": ""}
+- Input: "Trasa Północna Bodzio Meble"  
+  Output: {"town": "Zielona Góra", "street": "Trasa Północna Bodzio Meble"}
 
-Input:
-"Idziemy na rynek?"
+- Input: "Spotkajmy się na ulicy Zjednoczenia."
+  Output: {"town": "Zielona Góra", "street": "Zjednoczenia"}
+  
+- Input: "Jestem w Łężycy, blisko Poziomkowej."
+  Output: {"town": "Łężyca", "street": "Poziomkowa"}
+  
+- Input: "Przyjeżdżaj do Wilkanowa!"
+  Output: {"town": "Wilkanowo", "street": ""}
+  
+- Input: "Idziemy na rynek?"
+  Output:{}
 
-Output:
-{}
+- Input: Uwaga-suszsrka. Zatonie okolice kościoła w stronę ZG
+  Output: {"town": "Zatonie", "street": "kościół"}
+
+  I beg yu be precise so Nominatim geolocation will work the best
+
+
+Ensure that any reference to air towns or geographical indicators within texts mentioning "ZIelonaGora" or "ZielonoGórski powiat" is treated as valid location data in the extraction.
+
 """
-general_location = "Zielona Góra, Lubuskie, Poland"
+general_location = "Lubuskie, Poland"
 
 parser = Parser(
     open_router_api_key=API_KEY,
     system_prompt=system_prompt,
-    model="google/gemma-3-27b-it:free",
+    model="google/gemini-2.5-pro-exp-03-25:free",
 )
 
 message_queue = Queue()

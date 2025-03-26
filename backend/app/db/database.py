@@ -1,15 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from core.config import DATABASE_URL
+from backend.app.core.config import DATABASE_URL
+import logging
 
 engine = create_engine(DATABASE_URL)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionMaker = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db():
-    db = SessionLocal
     try:
-        yield db
-    finally:
-        db.close_all()
+        session = SessionMaker()
+        return session
+    except Exception as e:
+        logging.error(f"Error connecting to database: {e}")

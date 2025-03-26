@@ -4,12 +4,12 @@ import logging
 
 import asyncio
 from asyncio import Queue
-from backend.app.services import DatabaseHandler
+
+from backend.app.db.DatabaseHandler import DatabaseHandler
 from backend.app.services.MessengerClient import MessengerClient
 from backend.app.services.RecordCreator import RecordCreator
 from dotenv import load_dotenv
 from backend.app.services.Parser import Parser
-from backend.app.services.DatabaseHandler import DatabaseHandler
 from backend.app.db.database import get_db
 from geoalchemy2.elements import WKTElement
 from typing import Optional
@@ -17,7 +17,7 @@ from typing import Optional
 load_dotenv()
 
 API_KEY = os.environ.get("OPEN_ROUTER_API")
-COOKIES = os.environ.get("COOKIES_PATH")
+COOKIES = "backend/ufc-facebook.json"
 
 system_prompt = """You are an AI assistant specializing in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, and streets, while assuming Zielona Góra as the default location unless another town is explicitly stated.
 
@@ -73,11 +73,14 @@ message_queue = Queue()
 
 record_creator = RecordCreator(parser, general_location)
 database_connector = DatabaseHandler(get_db())
-messenger_client = MessengerClient(proccess_queue=message_queue)
 
 
 async def run_listener():
-    bot = await MessengerClient.startSession(COOKIES)
+    bot = await MessengerClient.startSession(
+        COOKIES, proccess_queue=message_queue
+    )
+
+    logging.info("Starting listener")
     if await bot.isLoggedIn():
         fetch_client_info = await bot.fetchUserInfo(bot.uid)
         client_info = fetch_client_info[bot.uid]
@@ -90,22 +93,44 @@ async def run_listener():
 
 
 async def message_handler():
-    while True:
-        message = await message_queue.get()
-        record = record_creator.create_record(message)
-        if record:
-            database_connector.add("locations", record)
-        else:
-            logging.error("Error creating record")
+    try:
+        while True:
+            message = await message_queue.get()
+            record = record_creator.create_record(message)
+            if record:
+                try:
+                    database_connector.add_location(record)
+                except Exception as e:
+                    logging.error(f"Database error: {e}")
+            else:
+                logging.error("Error creating record")
+    finally:
+        database_connector.close()
 
 
 async def main():
-    try:
-        asyncio.run(run_listener())
-    except Exception as e:
-        logging.error(f"Error: {e}")
+    listener_task = asyncio.create_task(run_listener())
+    handler_task = asyncio.create_task(message_handler())
 
     try:
-        asyncio.run(message_handler())
+        await asyncio.gather(listener_task, handler_task)
     except Exception as e:
-        logging.error(f"Error: {e}")
+        logging.error(f"Error in main execution: {e}")
+        if not listener_task.done():
+            listener_task.cancel()
+        if not handler_task.done():
+            handler_task.cancel()
+
+        try:
+            await listener_task
+        except asyncio.CancelledError:
+            pass
+        try:
+            await handler_task
+        except asyncio.CancelledError:
+            pass
+
+
+if __name__ == "__main__":
+
+    asyncio.run(main())

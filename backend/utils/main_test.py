@@ -8,7 +8,7 @@ project_root = os.path.dirname(
 )
 sys.path.append(project_root)
 
-from backend.app.services.AsyncRunner import main
+from backend.app.services.async_runner import main
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,7 +1,8 @@
-from openai import OpenAI
 import json
 import logging
 from typing import Dict, Optional
+
+from openai import OpenAI
 
 
 class Parser:
@@ -37,7 +38,18 @@ class Parser:
                 response_format={"type": "json_object"},
             )
 
+            if (
+                not response
+                or not hasattr(response, "choices")
+                or not response.choices
+            ):
+                logging.error("Invalid response: missing choices")
+                return None
+
             parased_reply = response.choices[0].message.content
+
+            if not parased_reply:
+                raise Exception("Empty reply from chat api")
 
             parased_reply = json.loads(parased_reply)
 

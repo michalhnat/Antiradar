@@ -9,6 +9,8 @@ backend/.env
 .env
 .env.*
 
+/credentials
+
 # Python cache files
 __pycache__/
 */__pycache__/

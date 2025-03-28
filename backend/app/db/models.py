@@ -1,10 +1,9 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
-from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2 import Geometry
-from sqlalchemy.sql import func
+from datetime import datetime
 
 from pydantic import BaseModel
-from datetime import datetime
+from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
@@ -17,9 +16,8 @@ class Location(Base):
     street = Column(String)
     lat = Column(Float)
     long = Column(Float)
+    message = Column(String)
     post_time = Column(DateTime(timezone=True), server_default=func.now())
-
-    geom = Column(Geometry(geometry_type="POINT"))
 
 
 class LocationPydantic(BaseModel):
@@ -28,6 +26,7 @@ class LocationPydantic(BaseModel):
     street: str
     lat: float | None
     long: float | None
+    message: str
     post_time: datetime
 
     class Config:

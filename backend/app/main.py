@@ -1,41 +1,39 @@
 import asyncio
 import logging
-from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
 
-from backend.app.db.database import get_db
-from backend.app.services.AsyncRunner import run_listener, message_handler
+from fastapi import Depends, FastAPI
+
 from backend.app.api.locations import router as locations_router
 from backend.app.core.logging import setup_logging
+from backend.app.db.database import get_db_async
+from backend.app.services.async_runner import message_handler, run_listener
+
+# from backend.app.db.database import init_db
+from backend.app.services.async_runner import main
 
 logger = setup_logging()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    listener_task = asyncio.create_task(run_listener())
-    handler_task = asyncio.create_task(message_handler())
+    # init_db()
+    main_task = asyncio.create_task(main())
 
-    logger.info("Background tasks started")
+    logger.info("Application initialized, database ready")
 
     yield
 
     logger.info("Shutting down background tasks")
-    if not listener_task.done():
-        listener_task.cancel()
-    if not handler_task.done():
-        handler_task.cancel()
+    if not main_task.done():
+        main_task.cancel()
 
     try:
-        await listener_task
+        await main_task
     except asyncio.CancelledError:
-        pass
-    try:
-        await handler_task
-    except asyncio.CancelledError:
-        pass
+        logger.info("Main task was cancelled")
 
-    logger.info("Background tasks shut down")
+    logger.info("Application shutdown complete")
 
 
 app = FastAPI(lifespan=lifespan)

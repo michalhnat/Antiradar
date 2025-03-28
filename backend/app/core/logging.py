@@ -1,16 +1,14 @@
 import logging
-import sys
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 
 def setup_logging():
-    # Create logs directory if it doesn't exist
     logs_dir = Path("/home/michal/projects/Antiradar/logs")
     logs_dir.mkdir(exist_ok=True, parents=True)
 
-    # Log file path
     log_file = logs_dir / "antiradar.log"
 
     # Create formatter

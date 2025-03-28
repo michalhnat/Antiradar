@@ -1,10 +1,9 @@
 import logging
 from typing import Dict, Optional
 
-from backend.app.db.models import Location
-from backend.app.services.Parser import Parser
-from geoalchemy2.elements import WKTElement
-from geopy.geocoders import Nominatim, Photon
+from backend.app.services.parser import Parser
+from geopy.geocoders import Nominatim
+
 from backend.app.db.models import Location
 
 
@@ -42,11 +41,11 @@ class RecordCreator:
             logging.info(f"Error geocoding address: {e}")
             return None
 
-    def create_record(self, message: str) -> Optional[Dict]:
+    def create_record(self, message: str) -> Optional[Location]:
         try:
             location_data = self._parse_msg(message)
             if not location_data:
-                return None
+                raise Exception("Failed to parse message")
 
             town = location_data.get("town", "")
             street = location_data.get("street", "")
@@ -58,21 +57,15 @@ class RecordCreator:
                 "street": street,
                 "latitude": None,
                 "longitude": None,
+                "message": message,
             }
 
             if coordinates:
                 result.update(
                     {
-                        "latitude": coordinates.latitude,
-                        "longitude": coordinates.longitude,
+                        "latitude": coordinates.latitude,  # type: ignore
+                        "longitude": coordinates.longitude,  # type: ignore
                     }
-                )
-
-            point = None
-            if result.get("latitude") and result.get("longitude"):
-                point = WKTElement(
-                    f"POINT({result['longitude']} {result['latitude']})",
-                    srid=4326,
                 )
 
             location = Location(
@@ -80,7 +73,7 @@ class RecordCreator:
                 street=result.get("street", ""),
                 lat=result.get("latitude"),
                 long=result.get("longitude"),
-                geom=point,
+                message=result.get("message", ""),
             )
 
             return location

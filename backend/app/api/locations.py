@@ -9,8 +9,8 @@ from backend.app.db.database_handler import DatabaseHandler
 router = APIRouter()
 
 
-def get_db_handler(db=Depends(get_db_async)):
-    return DatabaseHandler(db)
+def get_db_handler():
+    return DatabaseHandler()
 
 
 @router.get("/locations", response_model=List[models.LocationPydantic])

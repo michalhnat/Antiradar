@@ -4,7 +4,7 @@ from typing import Optional
 
 from fbchat_muqit import Client, Message, ThreadType
 
-logger = logging.getLogger("app.services.AsyncRunner")
+logger = logging.getLogger(__name__)
 
 
 class MessengerClient(Client):
@@ -28,7 +28,7 @@ class MessengerClient(Client):
 
         # client = cls()
         client = await super().startSession(cookies_file_path=session_cookies)
-        logging.info("Starting MessengerClient session")
+        logger.info("Starting MessengerClient session")
 
         client._process_queue = process_queue  # type: ignore
         return client
@@ -44,6 +44,6 @@ class MessengerClient(Client):
     ):
         if author_id != self.uid:
             message = message_object.text
-            logger.info(f"Received message: {message}")
+            logger.info("Received message: %s", message)
             if self._process_queue:
                 await self._process_queue.put(message)

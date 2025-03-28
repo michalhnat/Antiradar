@@ -1,5 +1,4 @@
 import logging
-import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -11,25 +10,20 @@ def setup_logging():
 
     log_file = logs_dir / "antiradar.log"
 
-    # Create formatter
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    # Configure the root logger
     root_logger = logging.getLogger()
 
-    # Clear any existing handlers to avoid duplicate logs
     if root_logger.handlers:
         for handler in root_logger.handlers:
             root_logger.removeHandler(handler)
 
-    # Set up console handler
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(formatter)
     root_logger.addHandler(console)
 
-    # Set up file handler with rotation (10MB max size, keep 5 backup files)
     file_handler = RotatingFileHandler(
         log_file,
         maxBytes=10 * 1024 * 1024,  # 10MB
@@ -39,10 +33,8 @@ def setup_logging():
     file_handler.setFormatter(formatter)
     root_logger.addHandler(file_handler)
 
-    # Set global log level
     root_logger.setLevel(logging.INFO)
 
-    # Configure specific modules
     for logger_name in [
         "backend.app.services",
         "backend.app.db",
@@ -52,5 +44,4 @@ def setup_logging():
         module_logger = logging.getLogger(logger_name)
         module_logger.setLevel(logging.INFO)
 
-    # Return the main application logger
     return logging.getLogger("backend.app")

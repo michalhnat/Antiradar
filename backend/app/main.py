@@ -2,14 +2,10 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 
 from backend.app.api.locations import router as locations_router
 from backend.app.core.logging import setup_logging
-from backend.app.db.database import get_db_async
-from backend.app.services.async_runner import message_handler, run_listener
-
-# from backend.app.db.database import init_db
 from backend.app.services.async_runner import main
 
 logger = setup_logging()

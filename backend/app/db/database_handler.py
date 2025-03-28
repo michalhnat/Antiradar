@@ -1,10 +1,10 @@
 import logging
-from typing import List, Optional
-
-from sqlalchemy.orm import Session
+from typing import List
 
 from backend.app.db.database import get_db_async
 from backend.app.db.models import Location
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseHandler:
@@ -13,20 +13,20 @@ class DatabaseHandler:
 
     def get_all_locations(self) -> List[Location]:
         try:
-            logging.info("Fetching all locations")
+            logger.info("Fetching all locations")
             return self.db.query(Location).all()
         except Exception as e:
-            raise Exception(f"Error fetching locations: {e}")
+            raise Exception("Error fetching locations: %s", str(e))
 
     def add_location(self, location: Location) -> Location:
         try:
-            logging.info("Adding new location")
+            logger.info("Adding new location")
             self.db.add(location)
             self.db.commit()
             self.db.refresh(location)
             return location
         except Exception as e:
-            raise Exception(f"Error adding location: {e}")
+            raise Exception("Error adding location: %s", str(e))
 
     def close(self):
         self.db.close()

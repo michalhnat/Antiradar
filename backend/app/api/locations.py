@@ -3,7 +3,6 @@ from typing import List
 from fastapi import APIRouter, Depends
 
 from backend.app.db import models
-from backend.app.db.database import get_db_async
 from backend.app.db.database_handler import DatabaseHandler
 
 router = APIRouter()

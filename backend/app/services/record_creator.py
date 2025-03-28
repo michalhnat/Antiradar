@@ -1,10 +1,13 @@
 import logging
 from typing import Dict, Optional
+from venv import logger
 
 from backend.app.services.parser import Parser
 from geopy.geocoders import Nominatim
 
 from backend.app.db.models import Location
+
+logger = logging.getLogger(__name__)
 
 
 class RecordCreator:
@@ -19,7 +22,7 @@ class RecordCreator:
             parsed = self.agent.parse_message(message)
             return parsed
         except Exception as e:
-            logging.error(f"Error parsing message: {e}")
+            logger.error("Error parsing message: %s", e)
             return None
 
     def _geocode(self, town: str, street: str) -> Optional[object]:
@@ -32,13 +35,13 @@ class RecordCreator:
             if not address:
                 return None
 
-            logging.info(f"Geocoding address: {address}")
+            logger.info("Geocoding address: %s", address)
 
             coordinates = self.geolocator.geocode(address)
-            logging.info(f"Geocoded address: {coordinates}")
+            logger.info("Geocoded address: %s", coordinates)
             return coordinates
         except Exception as e:
-            logging.info(f"Error geocoding address: {e}")
+            logger.info("Error geocoding address: %s", e)
             return None
 
     def create_record(self, message: str) -> Optional[Location]:
@@ -78,5 +81,5 @@ class RecordCreator:
 
             return location
         except Exception as e:
-            logging.error(f"Error creating address: {e}")
+            logger.error("Error creating address: %s", e)
             return None

@@ -1,8 +1,10 @@
 import json
 import logging
-from typing import Dict, Optional
+from typing import Optional
 
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 
 class Parser:
@@ -43,7 +45,7 @@ class Parser:
                 or not hasattr(response, "choices")
                 or not response.choices
             ):
-                logging.error("Invalid response: missing choices")
+                logger.error("Invalid response: missing choices")
                 return None
 
             parased_reply = response.choices[0].message.content
@@ -55,7 +57,7 @@ class Parser:
 
             return parased_reply
         except Exception as e:
-            logging.error(f"Error: {e}")
+            logger.error(f"Error: {e}")
             return None
 
     def update_system_prompt(self, new_prompt: str) -> None:

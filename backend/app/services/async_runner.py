@@ -2,18 +2,19 @@ import asyncio
 import logging
 from asyncio import Queue
 
+from backend.app.db.database import get_db_async
 from backend.app.db.database_handler import DatabaseHandler
 from backend.app.services.messenger_client import MessengerClient
 from backend.app.services.parser import Parser
 from backend.app.services.record_creator import RecordCreator
 
-from backend.app.core.config import (
-    COOKIES_PATH,
-    GENERAL_LOCATION,
-    MODEL,
-    OPENROUTER_API_KEY,
-    SYSTEM_PROMPT,
-)
+from backend.app.core.config import settings
+
+OPENROUTER_API_KEY = settings.OPENROUTER_API_KEY.get_secret_value()
+COOKIES_PATH = settings.COOKIES_PATH
+MODEL = settings.MODEL
+SYSTEM_PROMPT = settings.SYSTEM_PROMPT
+GENERAL_LOCATION = settings.GENERAL_LOCATION
 
 if not OPENROUTER_API_KEY:
     raise ValueError("OPENROUTER_API_KEY is not set")
@@ -61,21 +62,30 @@ async def run_listener():
 
 
 async def message_handler():
-    logger.info("Starting message handler")
-    try:
-        while True:
-            message = await message_queue.get()
+    while True:
+        message = await message_queue.get()
+        try:
             record = record_creator.create_record(message)
             if record:
-                logger.error("Creating record: %s", record)
+                logger.info("Creating record: %s", record)
+
+                db_session_gen = get_db_async()
+                db_session = next(db_session_gen)
                 try:
-                    database_connector.add_location(record)
+                    database_connector.add_location(db_session, record)
                 except Exception as e:
                     logger.error("Database error: %s", e)
+                finally:
+                    try:
+                        next(db_session_gen)
+                    except StopIteration:
+                        logger.info("Database session closed")
+                    except Exception as e:
+                        logger.error("Error closing database session: %s", e)
             else:
                 logger.error("Error creating record")
-    finally:
-        database_connector.close()
+        except Exception as e:
+            logger.error("Error processing message: %s", e)
 
 
 async def main():

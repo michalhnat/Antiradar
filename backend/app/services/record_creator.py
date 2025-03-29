@@ -45,41 +45,40 @@ class RecordCreator:
             return None
 
     def create_record(self, message: str) -> Optional[Location]:
+        latitude = None
+        longitude = None
+        town = ""
+        street = ""
+
         try:
             location_data = self._parse_msg(message)
             if not location_data:
-                raise Exception("Failed to parse message")
+                logger.warning("Failed to parse message: %s", message)
+                return None
 
             town = location_data.get("town", "")
             street = location_data.get("street", "")
 
             coordinates = self._geocode(town, street)
-
-            result = {
-                "town": town,
-                "street": street,
-                "latitude": None,
-                "longitude": None,
-                "message": message,
-            }
-
             if coordinates:
-                result.update(
-                    {
-                        "latitude": coordinates.latitude,  # type: ignore
-                        "longitude": coordinates.longitude,  # type: ignore
-                    }
+                latitude = coordinates.latitude  # type: ignore
+                longitude = coordinates.longitude  # type: ignore
+            else:
+                logger.warning(
+                    f"Could not geocode: Town='{town}', Street='{street}'"
                 )
 
             location = Location(
-                town=result.get("town", ""),
-                street=result.get("street", ""),
-                lat=result.get("latitude"),
-                long=result.get("longitude"),
-                message=result.get("message", ""),
+                town=town,
+                street=street,
+                lat=latitude,
+                long=longitude,
+                message=message,
             )
-
             return location
+
         except Exception as e:
-            logger.error("Error creating address: %s", e)
+            logger.error(
+                "Error creating Location record: %s", e, exc_info=True
+            )
             return None

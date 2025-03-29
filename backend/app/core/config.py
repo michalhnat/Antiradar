@@ -1,17 +1,16 @@
+import logging
 import os
+import sys
+from typing import Optional
 
-from dotenv import load_dotenv
+from pydantic import (
+    Field,
+    SecretStr,
+    ValidationError,
+)
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
-
-DATABASE_URL = os.environ.get("DATABASE_URL")
-OPENROUTER_API_KEY = os.environ.get("OPEN_ROUTER_API")
-COOKIES_PATH = os.environ.get("FB_CREDENTIALS_PATH")
-
-MODEL = "google/gemini-2.5-pro-exp-03-25:free"
-
-GENERAL_LOCATION = "Lubuskie, Poland"
-
+logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = """You are an AI assistant specialized in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, streets, and related geographic indicators. Follow these rules:
 
 • Extraction:
@@ -79,3 +78,33 @@ Examples:
 Ensure that any reference to air towns or geographical indicators within texts mentioning "ZIelonaGora" or "ZielonoGórski powiat" is treated as valid location data in the extraction.
 
 """
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    OPENROUTER_API_KEY: SecretStr = Field(
+        ..., validation_alias="OPEN_ROUTER_API"
+    )
+    COOKIES_PATH: str = Field(..., validation_alias="FB_CREDENTIALS_PATH")
+    DATABASE_URL: Optional[str] = Field(..., validation_alias="DATABASE_URL")
+    MODEL: str = "google/gemini-2.5-pro-exp-03-25:free"
+    GENERAL_LOCATION: str = "Lubuskie, Poland"
+    SYSTEM_PROMPT: str = SYSTEM_PROMPT
+
+
+try:
+    settings = Settings()  # type: ignore
+    logger.info("Application settings loaded successfully.")
+except ValidationError as e:
+    logger.critical(
+        f"CRITICAL: Failed to load application settings: {e}", exc_info=False
+    )
+    sys.exit(
+        f"Error loading configuration. Please check your .env file or environment variables.\nDetails: {e}"
+    )

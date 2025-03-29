@@ -1,9 +1,12 @@
 import logging
+from sys import settrace
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from backend.app.core.config import DATABASE_URL
+from backend.app.core.config import settings
+
+DATABASE_URL = settings.DATABASE_URL
 
 logger = logging.getLogger(__name__)
 

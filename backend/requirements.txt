@@ -17,7 +17,6 @@ fastapi==0.115.12
 fastapi-cli==0.0.7
 fbchat-muqit==1.1.2
 frozenlist==1.5.0
-GeoAlchemy2==0.17.1
 geographiclib==2.0
 geopy==2.4.1
 greenlet==3.1.1

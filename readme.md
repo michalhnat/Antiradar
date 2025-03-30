@@ -79,5 +79,9 @@ DATABASE_URL=<your_database_url>
 3. Example API Endpoints:
    - **GET /locations**: Retrieve all stored locations from the database.
 
-## License
-This project is licensed under the MIT License. See the LICENSE file for details.
+## Licensing
+
+This project is licensed under the GNU General Public License v3.0.
+
+This project uses third-party libraries licensed under BSD-3-Clause, Apache 2.0, and MIT licenses.
+See THIRD-PARTY-LICENSES.md for details.

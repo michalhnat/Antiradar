@@ -70,10 +70,9 @@ DATABASE_URL=<your_database_url>
    ```
 
 2. Access the API:
-   - Open your browser and navigate to:
-     ```
-     http://127.0.0.1:8000/docs
-     ```
+   ```
+   http://127.0.0.1:8000/docs
+   ```
 
 
 3. Example API Endpoints:

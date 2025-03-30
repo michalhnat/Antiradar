@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta
 from typing import List
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -42,3 +43,48 @@ class DatabaseHandler:
             logger.error("Unexpected error adding location: %s", e)
             db.rollback()
             raise Exception(f"Unexpected error adding location: {e}")
+
+    def get_all_locations_in_last_x_hours(
+        self, db: Session, x_hours: int
+    ) -> List[Location]:
+        try:
+            locations = (
+                db.query(Location)
+                .filter(
+                    Location.post_time
+                    >= datetime.now() - timedelta(hours=x_hours)
+                )
+                .all()
+            )
+            logger.info(
+                "Successfully fetched %d locations in the last %d hours.",
+                len(locations),
+                x_hours,
+            )
+            return locations
+        except SQLAlchemyError as e:
+            logger.error("Database error fetching locations: %s", e)
+            raise Exception(f"Database error fetching locations: {e}")
+        except Exception as e:
+            logger.error("Unexpected error fetching locations: %s", e)
+            raise Exception(f"Unexpected error fetching locations: {e}")
+
+    def get_all_locations_since(
+        self, db: Session, since: datetime
+    ) -> List[Location]:
+        try:
+            locations = (
+                db.query(Location).filter(Location.post_time >= since).all()
+            )
+            logger.info(
+                "Successfully fetched %d locations since %s.",
+                len(locations),
+                since,
+            )
+            return locations
+        except SQLAlchemyError as e:
+            logger.error("Database error fetching locations: %s", e)
+            raise Exception(f"Database error fetching locations: {e}")
+        except Exception as e:
+            logger.error("Unexpected error fetching locations: %s", e)
+            raise Exception(f"Unexpected error fetching locations: {e}")

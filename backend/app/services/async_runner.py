@@ -2,11 +2,12 @@ import asyncio
 import logging
 from asyncio import Queue
 
-from backend.app.db.database import get_db_async
-from backend.app.db.database_handler import DatabaseHandler
+from backend.app.core.dependencies import get_db
+from backend.app.services.location_service import LocationService
 from backend.app.services.messenger_client import MessengerClient
 from backend.app.services.parser import Parser
 from backend.app.services.record_creator import RecordCreator
+from backend.app.schemas.location import LocationCreate
 
 from backend.app.core.config import settings
 
@@ -39,7 +40,6 @@ parser = Parser(
 message_queue = Queue()
 
 record_creator = RecordCreator(parser, GENERAL_LOCATION)
-database_connector = DatabaseHandler()
 
 
 async def run_listener():
@@ -65,20 +65,25 @@ async def message_handler():
     while True:
         message = await message_queue.get()
         try:
-            record = record_creator.create_record(message)
-            if record:
-                logger.info("Creating record: %s", record)
-
-                db_session_gen = get_db_async()
-                db_session = next(db_session_gen)
+            location_data = record_creator.create_record(message)
+            if location_data:
+                logger.info("Created record: %s", location_data)
+                db_session = next(get_db())
                 try:
-                    database_connector.add_location(db_session, record)
+                    location_service = LocationService(db_session)
+                    created_location = location_service.create_location(
+                        location_data
+                    )
+                    logger.info(
+                        "Successfully created location with ID: %d",
+                        created_location.id,
+                    )
+
                 except Exception as e:
                     logger.error("Database error: %s", e)
                 finally:
                     try:
-                        next(db_session_gen)
-                    except StopIteration:
+                        db_session.close()
                         logger.info("Database session closed")
                     except Exception as e:
                         logger.error("Error closing database session: %s", e)

@@ -2,10 +2,11 @@ import logging
 from typing import Dict, Optional
 from venv import logger
 
+from backend.app.schemas.location import LocationCreate
 from backend.app.services.parser import Parser
 from geopy.geocoders import Nominatim
 
-from backend.app.db.models import Location
+# from backend.app.db.models.models import Location
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class RecordCreator:
             logger.info("Error geocoding address: %s", e)
             return None
 
-    def create_record(self, message: str) -> Optional[Location]:
+    def create_record(self, message: str) -> Optional[LocationCreate]:
         latitude = None
         longitude = None
         town = ""
@@ -68,7 +69,7 @@ class RecordCreator:
                     f"Could not geocode: Town='{town}', Street='{street}'"
                 )
 
-            location = Location(
+            location = LocationCreate(
                 town=town,
                 street=street,
                 lat=latitude,

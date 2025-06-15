@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from backend.app.api.locations import router as locations_router
+from backend.app.routers.locations import router as locations_router
 from backend.app.core.logging import setup_logging
 from backend.app.services.async_runner import main
 

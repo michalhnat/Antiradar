@@ -1,16 +1,12 @@
 import logging
-import os
 import sys
 from typing import Optional
 
-from pydantic import (
-    Field,
-    SecretStr,
-    ValidationError,
-)
+from pydantic import Field, SecretStr, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
+
 SYSTEM_PROMPT = """You are an AI assistant specialized in extracting and formatting location information from unstructured text messages. Your task is to identify and structure any mentioned towns, districts, streets, and related geographic indicators. Follow these rules:
 
 • Extraction:
@@ -57,26 +53,9 @@ Examples:
 - Input: "Trasa Północna Bodzio Meble"  
   Output: {"town": "Zielona Góra", "street": "Trasa Północna Bodzio Meble"}
 
-- Input: "Spotkajmy się na ulicy Zjednoczenia."
-  Output: {"town": "Zielona Góra", "street": "Zjednoczenia"}
-  
-- Input: "Jestem w Łężycy, blisko Poziomkowej."
-  Output: {"town": "Łężyca", "street": "Poziomkowa"}
-  
-- Input: "Przyjeżdżaj do Wilkanowa!"
-  Output: {"town": "Wilkanowo", "street": ""}
-  
-- Input: "Idziemy na rynek?"
-  Output:{}
-
-- Input: Uwaga-suszsrka. Zatonie okolice kościoła w stronę ZG
-  Output: {"town": "Zatonie", "street": "kościół"}
-
-  I beg you be precise so Nominatim geolocation will work the best. Dont use location descriptions like "near the church" or "by the river" as they are not precise enough for geolocation. Be precise and use only street names or town names company names and places names.
-
+I beg you be precise so Nominatim geolocation will work the best. Dont use location descriptions like "near the church" or "by the river" as they are not precise enough for geolocation. Be precise and use exact street names and numbers if available.
 
 Ensure that any reference to air towns or geographical indicators within texts mentioning "ZIelonaGora" or "ZielonoGórski powiat" is treated as valid location data in the extraction.
-
 """
 
 
@@ -91,15 +70,29 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: SecretStr = Field(
         ..., validation_alias="OPEN_ROUTER_API"
     )
+    MODEL: str = Field(default="google/gemini-2.5-pro-exp-03-25:free")
+
     COOKIES_PATH: str = Field(..., validation_alias="FB_CREDENTIALS_PATH")
-    DATABASE_URL: Optional[str] = Field(..., validation_alias="DATABASE_URL")
-    MODEL: str = "google/gemini-2.5-pro-exp-03-25:free"
-    GENERAL_LOCATION: str = "Lubuskie, Poland"
-    SYSTEM_PROMPT: str = SYSTEM_PROMPT
+
+    DATABASE_URL: str = Field(..., validation_alias="DATABASE_URL")
+
+    DEBUG: bool = Field(default=False)
+    LOG_LEVEL: str = Field(default="INFO")
+
+    GENERAL_LOCATION: str = Field(default="Lubuskie, Poland")
+    SYSTEM_PROMPT: str = Field(default=SYSTEM_PROMPT)
+
+    API_V1_STR: str = Field(default="/api/v1")
+    PROJECT_NAME: str = Field(default="Antiradar API")
+    PROJECT_VERSION: str = Field(default="1.0.0")
+
+
+def get_settings() -> Settings:
+    return Settings()  # type: ignore[call-arg]
 
 
 try:
-    settings = Settings()  # type: ignore
+    settings = get_settings()
     logger.info("Application settings loaded successfully.")
 except ValidationError as e:
     logger.critical(

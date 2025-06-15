@@ -26,7 +26,6 @@ class MessengerClient(Client):
                 "session_cookies must be provided as a string path"
             )
 
-        # client = cls()
         client = await super().startSession(cookies_file_path=session_cookies)
         logger.info("Starting MessengerClient session")
 
